@@ -24,28 +24,40 @@ if STAGE == 'prod':
     REDIRECT_URI = 'https://slackcast.devtestit.com/redirect'
 else:
     PREFIX = '/dev'
-    REDIRECT_URI = f'https://1ixagcdjk7.execute-api.us-east-1.amazonaws.com{PREFIX}/redirect'
+    REDIRECT_URI = (
+        f'https://1ixagcdjk7.execute-api.us-east-1.amazonaws.com{PREFIX}/redirect'
+    )
+
 
 def get_state():
     return 'foo'
 
+
 def valid_state(state):
     return state == 'foo'
 
+
 def get_token(code):
-    res = requests.get(SLACK_TOKEN_URL, params={
+    res = requests.get(
+        SLACK_TOKEN_URL,
+        params={
             'client_id': CLIENT_ID,
             'client_secret': CLIENT_SECRET,
             'code': code,
             'redirect_uri': REDIRECT_URI,
-        })
+        },
+    )
 
     payload = res.json()
-    log.debug(f'Slack says: {res.status_code} {res.reason}: {payload.get("error", "No error message.")}')
+    log.debug(
+        f'Slack says: {res.status_code} {res.reason}: {payload.get("error", "No error message.")}'
+    )
 
-    if not (res.ok and payload['ok']): return
+    if not (res.ok and payload['ok']):
+        return
 
     return payload.get('access_token', None)
+
 
 @app.route('/', methods=['GET'])
 def index():
@@ -70,7 +82,10 @@ def index():
 def start_install(event=None, context=None):
     log.info('Redirecting to Slack OAuth2 authorize URL.')
 
-    return redirect(f'{SLACK_AUTH_URL}?client_id={CLIENT_ID}&scope={SCOPE}&state={get_state()}&redirect_uri={REDIRECT_URI}')
+    return redirect(
+        f'{SLACK_AUTH_URL}?client_id={CLIENT_ID}&scope={SCOPE}&state={get_state()}&redirect_uri={REDIRECT_URI}'
+    )
+
 
 @app.route('/redirect', methods=['GET'])
 def extract_token(event=None, context=None):
@@ -78,7 +93,7 @@ def extract_token(event=None, context=None):
 
     params = parse_qs(urlparse(request.url).query)
 
-    state = params.get('state', [None])[0] 
+    state = params.get('state', [None])[0]
     code = params.get('code', [None])[0]
 
     if code is None:
@@ -93,6 +108,7 @@ def extract_token(event=None, context=None):
         return token
     else:
         return 'Unauthorized', 401
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='192.168.1.7', port=65000)
